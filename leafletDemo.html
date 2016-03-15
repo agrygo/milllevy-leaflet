@@ -80,17 +80,43 @@
               var authName = response.features[i].properties.AuthorityName;
               var levy = response.features[i].properties.Rate;
               results.push ([authNum, authName, levy]);
-              results.reverse();  //TODO reverse
-              //create table
-              document.getElementById("info-pane").innerHTML +=
-                '<br>'+ authNum + ' - ' + authName + ' ' + levy;
-          }
 
+
+
+              //create table
+
+          }
+          //sort results by authority name
+          results.sort((function(index){
+                return function(a, b){
+                  return (a[index] === b[index] ? 0 : (a[index] < b[index] ? -1 : 1));
+                };
+              })(0));
+          console.log(results);
+          console.log(results[0]);
+          console.log(results[0][0]);
+          console.log(results[0][1]);
+          console.log(results[0][2]);
+
+          //add results to table
+          for (i=0, il=results.length; i<il; i++){
+          	console.log(results[i][0]);
+          	console.log(results[i][1]);
+          	console.log(results[i][2]);
+          	var authNum = (results[i][0]);
+          	var authName = (results[i][1]);
+          	var levy = (results[i][2]);
+          	console.log (authNum + " " + authName + " " + levy);
+          	document.getElementById("info-pane").innerHTML +=
+                '<br>'+ authNum + ' - ' + authName + ' ' + levy;
+
+          }
           console.log(results.length)  ;
 
 
         })
       }
+
 
     //Popup for district
       /*district.bindPopup(function(evt){
