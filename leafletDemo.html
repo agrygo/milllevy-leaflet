@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Tax Mill Levy</title>
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet/v1.0.0-beta.2/leaflet.js"></script>
+
+    <!-- Esri Leaflet -->
+    <script src="http://cdn.jsdelivr.net/leaflet.esri/2.0.0-beta.7/esri-leaflet.js"></script>
+    <!-- Esri Leaflet Related -->
+    <script src="http://cdn.jsdelivr.net/leaflet.esri.related/2.0.0/esri-leaflet-related.js"></script>
+
+    <style>
+      html, body, #map {
+        margin:0; padding:0;  width : 100%; height : 100%;
+      }
+      #info-pane {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      padding: 1em;
+      background: white;
+    }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div id="info-pane" class="leaflet-bar"></div>
+    <script>
+      var map = L.map('map').setView([39.708, -108.21], 10);
+
+      L.esri.basemapLayer("Gray").addTo(map);
+
+      var district = L.esri.featureLayer({
+        url: "http://gis.garfield-county.com/arcgis/rest/services/MapServices/TaxMill2015/FeatureServer/0",
+      }).addTo(map);
+
+      district.setStyle({
+        //stroke: false,
+        //fill: false
+        color: 'black'
+      })
+
+      var tax = L.esri.dynamicMapLayer({
+        url: "http://gis.garfield-county.com/arcgis/rest/services/MapServices/TaxMill2015/MapServer",
+        opacity: 0.7,
+        layers: [1,2,3]
+      }).addTo(map);
+
+      var parcels = L.esri.dynamicMapLayer({
+        url: "http://gis.garfield-county.com/arcgis/rest/services/Development/GC_Parcels/MapServer",
+      }).addTo(map);
+
+    //Related records query on district
+      var query = L.esri.Related.query(district);
+      query.fields = ["District", "DistrictName", "Authority", "AuthorityName", "Rate"];
+      query.returnZ = false;
+      //wire event listener for on click
+      district.on("click", queryRelated);
+
+      function queryRelated(evt){
+        document.getElementById("info-pane").innerHTML =  "";
+        query.objectIds([evt.layer.feature.id]).relationshipId("0").run(function(error, response, raw){
+          console.log(evt.layer.feature.id);
+          console.log(response.features[0].properties.AuthorityName);
+        //empty array to collect results
+          results = [];
+          console.log(results.length);
+
+        //create results header
+          var district = response.features[0].properties.District;
+          var distName = response.features[0].properties.DistrictName;
+          var title  = 'Tax District ' + district + ' (' + distName + ')'
+          document.getElementById("info-pane").innerHTML += title;
+
+          //results body  - loop through results & add to t
+          for (i=0, il=response.features.length; i < il; i++){
+              var authNum = response.features[i].properties.Authority;
+              var authName = response.features[i].properties.AuthorityName;
+              var levy = response.features[i].properties.Rate;
+              results.push ([authNum, authName, levy]);
+              results.reverse();  //TODO reverse
+              //create table
+              document.getElementById("info-pane").innerHTML +=
+                '<br>'+ authNum + ' - ' + authName + ' ' + levy;
+          }
+
+          console.log(results.length)  ;
+
+
+        })
+      }
+
+    //Popup for district
+      /*district.bindPopup(function(evt){
+        return L.Util.template('<b>District</b> {AREAID}<br><b>Mill Levy</b> ${FIRST_Levy}', evt.feature.properties);
+      });*/
+      //var popupTemplate = "<h3>{NAME}</h3>{ACRES} Acres<br><small>Property ID: {PROPERTYID}<small>";
+
+      /*parks.bindPopup(function(e){
+        return L.Util.template(popupTemplate, e.feature.properties)
+      });*/
+    </script>
+  </body>
+</html>
