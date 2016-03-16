@@ -12,21 +12,40 @@
 
     <style>
       html, body, #map {
-        margin:0; padding:0;  width : 100%; height : 100%;
+          margin:0; padding:0;  width : 100%; height : 100%;
       }
       #info-pane {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      padding: 1em;
-      background: white;
+	      position: absolute;
+	      top: 10px;
+	      left: 40px;
+	      z-index: 1000;
+	      padding: 1em;
+	      background: white;
+	      font-family: 'Tahoma';
+	      font-size: 12px;
+	      border-width: 1px;
+	      border-style: solid;
+	      border-color: grey;
+	      border-radius: 5px;
+	      }
+      .header {
+      	  font-size: 14px;
+      }
+      .col-right {
+	      text-align: right;
+	      font-family: 'Tahoma';
+	      font-size: 12px;
+      }
+      .odd {
+      	  background-color: #f2f2f2;
+      }
+
     }
     </style>
   </head>
   <body>
     <div id="map"></div>
-    <div id="info-pane" class="leaflet-bar"></div>
+    <div id="info-pane"></div>
     <script>
       var map = L.map('map').setView([39.708, -108.21], 10);
 
@@ -60,62 +79,68 @@
       district.on("click", queryRelated);
 
       function queryRelated(evt){
+      	document.getElementById("info-pane").style.visibility = 'visible';
         document.getElementById("info-pane").innerHTML =  "";
         query.objectIds([evt.layer.feature.id]).relationshipId("0").run(function(error, response, raw){
-          console.log(evt.layer.feature.id);
-          console.log(response.features[0].properties.AuthorityName);
-        //empty array to collect results
+          //console.log(evt.layer.feature.id);
+          //console.log(response.features[0].properties.AuthorityName);
+        //empty arrays to collect results & levy to sum
           results = [];
-          console.log(results.length);
+          total = [];
 
-        //create results header
-          var district = response.features[0].properties.District;
-          var distName = response.features[0].properties.DistrictName;
-          var title  = 'Tax District ' + district + ' (' + distName + ')'
-          document.getElementById("info-pane").innerHTML += title;
-
-          //results body  - loop through results & add to t
+        //results body  - loop through results & add to t
           for (i=0, il=response.features.length; i < il; i++){
               var authNum = response.features[i].properties.Authority;
               var authName = response.features[i].properties.AuthorityName;
               var levy = response.features[i].properties.Rate;
               results.push ([authNum, authName, levy]);
+              total.push(levy);
+		  }
 
+		//sum levy amounts  & format to 4 decimal places
+		  var s = total.reduce(function(a,b){
+		  	return a + b;
+		  });
+		  var sum = s.toFixed(4);
+		  //console.log(sum);
 
+		//create results header
+          var district = response.features[0].properties.District;
+          var distName = response.features[0].properties.DistrictName;
+          var title  = '<b>Tax District ' + district + ' (' + distName + ')</b>'
+          var header = "<table width='400' class='header'>";
+          	  header += '<tr><td>' + title + '</td>';
+          	  header += '<tr><td><b>Authority</b></td>' + '<td class="col-right"><b>Mill Levy  ' + sum + '</b></td></tr>';
+          	  header += "</table>"
+          document.getElementById("info-pane").innerHTML += header;
 
-              //create table
-
-          }
-          //sort results by authority name
+        //sort results by authority name
           results.sort((function(index){
                 return function(a, b){
                   return (a[index] === b[index] ? 0 : (a[index] < b[index] ? -1 : 1));
                 };
               })(0));
-          console.log(results);
-          console.log(results[0]);
-          console.log(results[0][0]);
-          console.log(results[0][1]);
-          console.log(results[0][2]);
 
           //add results to table
           for (i=0, il=results.length; i<il; i++){
-          	console.log(results[i][0]);
-          	console.log(results[i][1]);
-          	console.log(results[i][2]);
           	var authNum = (results[i][0]);
           	var authName = (results[i][1]);
           	var levy = (results[i][2]);
-          	console.log (authNum + " " + authName + " " + levy);
-          	document.getElementById("info-pane").innerHTML +=
-                '<br>'+ authNum + ' - ' + authName + ' ' + levy;
 
+          	if (i%2){
+	          	var info = "<table width='400' cellspacing='0' cellpadding='3'>";
+	          		info += '<tr><td>' + authNum + ' - ' + authName + '</td><td class="col-right">' + levy.toFixed(4) + '</td></tr>';
+	          		info += "</table>"
+	          	document.getElementById("info-pane").innerHTML += info;
+          	} else {
+          		var info = "<table width='400' cellspacing='0' cellpadding='3'>";
+	          		info += '<tr class="odd"><td>' + authNum + ' - ' + authName+'</td><td class="col-right">'+levy.toFixed(4) + '</td></tr>';
+	          		info += "</table>"
+	          	document.getElementById("info-pane").innerHTML += info;
+          	}
           }
-          console.log(results.length)  ;
-
-
         })
-      }
+    }
 
 
     //Popup for district
